@@ -16,7 +16,7 @@
 #define KEY_SLOT            "slot"
 #define KEY_NETWORK         "network"
 
-#define TIME_FOR_PING       1200        // 10 MIN
+#define TIME_FOR_PING       120         // 1 MIN
 
 void MQTT_task(void *task);
 bool MQTT_sendJsonToAws(char *data);

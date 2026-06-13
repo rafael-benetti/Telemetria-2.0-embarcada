@@ -106,7 +106,7 @@ void getHandlers(void)
     });
 
     HTTP_server.on("/config", HTTP_POST, [](AsyncWebServerRequest *request) {
-        const String response = request->getParam(0)->value();
+        const String response = request->getParam(static_cast<size_t>(0))->value();
 
         const size_t capacity = JSON_ARRAY_SIZE(13) + JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 14 * JSON_OBJECT_SIZE(4) + 180;
         DynamicJsonDocument jsonDoc(capacity);
