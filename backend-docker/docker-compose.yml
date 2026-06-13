@@ -10,6 +10,21 @@ services:
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
 
+  app:
+    build:
+      context: ./app
+    container_name: dc-monitor-app
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+    environment:
+      MQTT_HOST: mqtt
+      MQTT_PORT: 1883
+      TELEMETRY_TOPIC: dc/telemetry
+      PORT: 8080
+    ports:
+      - "8080:8080"
+
 volumes:
   mosquitto-data:
   mosquitto-log:

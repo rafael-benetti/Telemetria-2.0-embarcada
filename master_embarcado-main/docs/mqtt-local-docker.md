@@ -10,16 +10,20 @@ Foi adicionado um diretorio proprio para infraestrutura local:
 backend-docker/
 ```
 
-Dentro dele ha um `docker-compose` simples com Mosquitto:
+Dentro dele ha um `docker-compose` com:
+
+- Mosquitto, broker MQTT local.
+- DC Monitor App, dashboard/API local para receber telemetria e enviar comandos.
 
 ```powershell
 docker compose -f backend-docker/docker-compose.yml up -d
 ```
 
-Ele sobe um broker MQTT em:
+Ele sobe:
 
 ```text
-porta 1883
+MQTT:      localhost:1883
+Dashboard: http://localhost:8080
 ```
 
 ## Configuracao no firmware
@@ -47,10 +51,28 @@ Para ver mensagens chegando no broker:
 docker exec -it dc-monitor-mqtt mosquitto_sub -t "#" -v
 ```
 
+Para testar o fluxo sem a placa:
+
+```powershell
+docker exec dc-monitor-mqtt mosquitto_pub -t dc/telemetry -m '{\"serialNumber\":1,\"rssi\":-55,\"network\":\"wifi\",\"version\":\"1.0.6\",\"count\":3,\"pin\":4,\"data_off\":false}'
+```
+
+Depois abra:
+
+```text
+http://localhost:8080
+```
+
 Para enviar comando para uma placa, substitua `<deviceId>` pelo ID real:
 
 ```powershell
 docker exec -it dc-monitor-mqtt mosquitto_pub -t "dc/<deviceId>/cmd" -m "{\"type\":\"RestartMachine\"}"
+```
+
+Tambem e possivel enviar pelo dashboard ou pela API:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8080/api/devices/1/command -Method POST -ContentType 'application/json' -Body '{\"type\":\"RestartMachine\"}'
 ```
 
 ## OTA local
