@@ -396,14 +396,124 @@ function renderDashboard() {
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: var(--slate-50); }
     .payload-cell { min-width: 420px; }
+    .event-detail-cell {
+      padding-top: 0;
+      background: #fbfcff;
+    }
+    .event-detail-row:hover td {
+      background: #fbfcff;
+    }
+    .event-payload-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, .75fr) minmax(360px, 1fr);
+      gap: 12px;
+      align-items: stretch;
+      min-width: 660px;
+    }
+    .payload-summary-card {
+      display: grid;
+      gap: 10px;
+      min-width: 260px;
+      padding: 12px;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #ffffff, var(--slate-50));
+      box-shadow: var(--shadow-sm);
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .summary-row.span-2 { grid-column: span 2; }
+    .summary-row.span-3 { grid-column: span 3; }
+    .payload-summary-title {
+      color: var(--slate-800);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .summary-row {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--slate-100);
+      border-radius: 8px;
+      background: white;
+    }
+    .summary-content {
+      min-width: 0;
+    }
+    .summary-icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--blue-50);
+      color: var(--blue-700);
+    }
+    .summary-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .summary-label {
+      display: block;
+      color: var(--slate-400);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 2px;
+    }
+    .summary-value {
+      display: block;
+      color: var(--slate-800);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
     .payload-card {
       display: grid;
       gap: 8px;
       min-width: 360px;
+      max-width: 560px;
+      padding: 10px;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: var(--shadow-sm);
     }
     .payload-toolbar {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .payload-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--slate-600);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .payload-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-500);
+      box-shadow: 0 0 0 3px var(--green-50);
     }
     .copy-btn {
       height: 28px;
@@ -444,7 +554,6 @@ function renderDashboard() {
       line-height: 1.55;
       box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
     }
-
     .rssi-badge {
       display: inline-flex;
       align-items: center;
@@ -541,7 +650,14 @@ function renderDashboard() {
       header { padding: 16px 20px; }
       main { padding: 20px 16px; }
       .grid { grid-template-columns: 1fr; }
-      td code { max-width: 160px; }
+      .event-payload-layout {
+        grid-template-columns: 1fr;
+        min-width: 360px;
+      }
+      .summary-row.span-2,
+      .summary-row.span-3 {
+        grid-column: span 6;
+      }
     }
   </style>
 </head>
@@ -581,7 +697,7 @@ function renderDashboard() {
     </section>
     <section class="panel" style="margin-top:20px">
       <h2>Eventos</h2>
-      <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Serial</th><th>Tipo</th><th>Pino</th><th>Contagem</th><th>Payload</th></tr></thead><tbody id="events"></tbody></table></div>
+      <div class="table-wrap"><table><tbody id="events"></tbody></table></div>
     </section>
   </main>
   <script>
@@ -592,9 +708,45 @@ function renderDashboard() {
       var bars = n >= -50 ? '&#9646;&#9646;&#9646;&#9646;' : n >= -70 ? '&#9646;&#9646;&#9646;' : '&#9646;';
       return '<td><span class="rssi-badge ' + cls + '">' + bars + ' ' + n + ' dBm</span></td>';
     }
+    function formatPtBrDate(value) {
+      if (!value) return "-";
+      var parts = String(value).match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})/);
+      if (!parts) return value;
+      return parts[3] + "/" + parts[2] + "/" + parts[1] + " " + parts[4] + ":" + parts[5] + ":" + parts[6];
+    }
     function payloadBox(value) {
-      var text = JSON.stringify(value, null, 2);
-      return '<div class="payload-card"><div class="payload-toolbar"><button type="button" class="copy-btn" data-copy="' + escapeHtml(text) + '">Copiar</button></div><pre class="payload-box">' + escapeHtml(text) + '</pre></div>';
+      var displayValue = Object.assign({}, value);
+      if (displayValue.at) displayValue.at = formatPtBrDate(displayValue.at);
+      if (displayValue.lastSeenAt) displayValue.lastSeenAt = formatPtBrDate(displayValue.lastSeenAt);
+      var text = JSON.stringify(displayValue, null, 2);
+      return '<div class="payload-card"><div class="payload-toolbar"><span class="payload-title">Payload recebido</span><button type="button" class="copy-btn" data-copy="' + escapeHtml(text) + '">Copiar</button></div><pre class="payload-box">' + escapeHtml(text) + '</pre></div>';
+    }
+    function summaryIcon(name) {
+      var icons = {
+        time: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>',
+        serial: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 9h8M8 13h5"></path></svg>',
+        type: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"></path></svg>',
+        pin: '<svg viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M8 8h8v7a4 4 0 0 1-8 0V8z"></path><path d="M12 19v2"></path></svg>',
+        count: '<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"></path><path d="M8 5v14M16 5v14"></path></svg>'
+      };
+      return icons[name] || icons.type;
+    }
+    function summaryRow(icon, label, value, span) {
+      return '<div class="summary-row span-' + span + '"><span class="summary-icon">' + summaryIcon(icon) + '</span><span class="summary-content"><span class="summary-label">' + label + '</span><span class="summary-value">' + escapeHtml(value ?? "-") + '</span></span></div>';
+    }
+    function eventSummaryBox(event, eventId) {
+      return '<div class="payload-summary-card"><div class="payload-summary-title"><span style="color:var(--blue-700);">ID:' + escapeHtml(eventId) + '</span> <span style="color:var(--slate-300);margin:0 6px;">|</span> Dados do payload <span style="color:var(--slate-300);margin:0 6px;">|</span> <span style="color:var(--slate-400);font-weight:700;">' + escapeHtml(formatPtBrDate(event.at)) + '</span></div>'
+        + '<div class="summary-grid">'
+        + summaryRow("serial", "Serial", event.serialNumber || "-", 2)
+        + summaryRow("type", "Tipo", event.type || "-", 2)
+        + summaryRow("pin", "Pino", event.pin ?? "-", 2)
+        + summaryRow("count", "Contagem", event.count ?? "-", 2)
+        + summaryRow("type", "RSSI", event.rssi ?? "-", 2)
+        + summaryRow("type", "Rede", event.network || "-", 2)
+        + summaryRow("type", "Versao", event.version || "-", 2)
+        + summaryRow("type", "Offline", event.data_off === undefined ? "-" : String(event.data_off), 2)
+        + summaryRow("type", "Topico", event.topic || "-", 6)
+        + '</div></div>';
     }
     function bindCopyButtons() {
       document.querySelectorAll(".copy-btn").forEach(function(button) {
@@ -625,14 +777,20 @@ function renderDashboard() {
       var evtCount = data.events.filter(function(e){ return e.type !== "ping"; }).length;
       document.getElementById("statDevices").textContent = devCount;
       document.getElementById("statEvents").textContent = evtCount;
-      document.getElementById("statLast").textContent = data.lastMessageAt || "-";
+      document.getElementById("statLast").textContent = formatPtBrDate(data.lastMessageAt);
       devices.innerHTML = Object.entries(data.devices).map(function(entry) {
         var id = entry[0], d = entry[1];
-        return "<tr><td><strong>" + id + "</strong></td><td>" + (d.lastSeenAt || "-") + "</td><td>" + (d.network || "-") + "</td>" + rssiBadge(d.rssi) + "<td>" + (d.version || "-") + '</td><td class="payload-cell">' + payloadBox(d) + "</td></tr>";
+        return "<tr><td><strong>" + id + "</strong></td><td>" + formatPtBrDate(d.lastSeenAt) + "</td><td>" + (d.network || "-") + "</td>" + rssiBadge(d.rssi) + "<td>" + (d.version || "-") + '</td><td class="payload-cell">' + payloadBox(d) + "</td></tr>";
       }).join("") || '<tr><td colspan="6" class="empty-state">Nenhum dispositivo conectado</td></tr>';
       var filtered = data.events.filter(function(e){ return e.type !== "ping"; });
+      var total = filtered.length;
       events.innerHTML = filtered
-        .map(function(e) { return "<tr><td>" + e.at + "</td><td>" + (e.serialNumber || "-") + "</td><td>" + (e.type || "-") + "</td><td>" + (e.pin ?? "-") + "</td><td>" + (e.count ?? "-") + '</td><td class="payload-cell">' + payloadBox(e) + "</td></tr>"; })
+        .map(function(e, index) {
+          var eventId = String(total - index).padStart(4, "0");
+          return '<tr class="event-detail-row"><td colspan="6" class="event-detail-cell">'
+            + '<div class="event-payload-layout">' + eventSummaryBox(e, eventId) + payloadBox(e) + '</div>'
+            + '</td></tr>';
+        })
         .join("") || '<tr><td colspan="6" class="empty-state">Nenhum evento registrado</td></tr>';
       bindCopyButtons();
     }
