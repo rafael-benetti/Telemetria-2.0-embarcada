@@ -21,12 +21,12 @@ char MQTT_buffer[128];
 
 bool MQTT_sendJsonToAws(char *data)
 {
-    return MQTT_client.publish(AWS_IOT_TOPIC_PUBLISH, data);
+    return MQTT_client.publish(MQTT_TOPIC_PUBLISH, data);
 }
 
 bool MQTT_connect()
 {
-    MQTT_client.setServer(AWS_IOT_ENDPOINT, AWS_PORT);
+    MQTT_client.setServer(MQTT_BROKER_HOST, MQTT_PORT);
 
     vTaskDelay(500 / portTICK_PERIOD_MS);
 

@@ -47,11 +47,14 @@ A mensagem enviada pode conter:
 - Numero do pino.
 - Indicacao se o dado veio do armazenamento offline.
 
-Configuracao atual de MQTT:
+Configuracao atual de MQTT local:
 
-- Broker: `broker.blacktelemetry.com`
-- Topico de publicacao: `pub`
-- Topico de comandos: `sub/<deviceId>`
+- Broker padrao: `192.168.0.20`
+- Porta: `1883`
+- Topico de publicacao: `dc/telemetry`
+- Topico de comandos: `dc/<deviceId>/cmd`
+
+O broker padrao deve ser o IP da maquina na rede local que roda o Docker/backend. Esse valor fica em `include/mqtt_config.h` e pode ser alterado antes do build.
 
 ## Comandos remotos
 
@@ -105,11 +108,12 @@ Se um evento nao puder ser publicado no MQTT, o firmware salva a contagem por pi
 
 ## OTA
 
-O firmware possui rotina de atualizacao OTA. O host configurado atualmente e:
+O firmware possui rotina de atualizacao OTA. Por padrao, o host de OTA foi apontado para o mesmo host local do MQTT:
 
-- `blacktelemetry-ota.s3-sa-east-1.amazonaws.com`
+- Host: mesmo valor de `MQTT_BROKER_HOST`
+- Porta: `8080`
 
-A porta configurada atualmente e `80`.
+Isso remove a dependencia do host remoto antigo. Para usar OTA localmente, o backend ou algum servidor HTTP local deve servir o arquivo de firmware.
 
 ## Pontos fortes
 
@@ -122,8 +126,8 @@ A porta configurada atualmente e `80`.
 
 ## Pontos de atencao
 
-- MQTT esta configurado sem TLS na porta `1883`.
-- OTA esta configurado por HTTP na porta `80`.
+- MQTT local esta configurado sem TLS na porta `1883`.
+- OTA local esta configurado por HTTP na porta `8080`.
 - O AP de configuracao nao possui senha.
 - A interface web retorna senhas e PINs salvos.
 - O JSON recebido por MQTT e webserver nao tem validacao rigorosa.

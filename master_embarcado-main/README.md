@@ -6,6 +6,8 @@ Documentacao:
 
 - [Visao geral do firmware](docs/visao-geral-firmware.md)
 - [Hardware e possibilidade de rastreamento](docs/hardware-e-rastreamento.md)
+- [Projeto futuro: DC Monitor](docs/projeto-dc-monitor.md)
+- [MQTT local com Docker](docs/mqtt-local-docker.md)
 
 Comandos principais:
 
