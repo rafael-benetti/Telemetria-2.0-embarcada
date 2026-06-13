@@ -6,6 +6,7 @@ const PORT = Number(process.env.PORT || 8080);
 const MQTT_HOST = process.env.MQTT_HOST || "mqtt";
 const MQTT_PORT = Number(process.env.MQTT_PORT || 1883);
 const TELEMETRY_TOPIC = process.env.TELEMETRY_TOPIC || "dc/telemetry";
+const LOCAL_TIME_ZONE = process.env.TZ || "America/Sao_Paulo";
 
 const state = {
   connected: false,
@@ -16,6 +17,22 @@ const state = {
 
 let mqttSocket = null;
 let mqttPacketId = 1;
+
+function nowLocalIso() {
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: LOCAL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    fractionalSecondDigits: 3,
+  }).formatToParts(new Date());
+
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}T${lookup.hour}:${lookup.minute}:${lookup.second}.${lookup.fractionalSecond}`;
+}
 
 function encodeString(value) {
   const body = Buffer.from(String(value));
@@ -98,7 +115,7 @@ function handlePublish(body) {
     message = { raw: payload };
   }
 
-  const now = new Date().toISOString();
+  const now = nowLocalIso();
   const deviceId = String(message.serialNumber || "unknown");
   const event = { at: now, topic, ...message };
   state.lastMessageAt = now;
@@ -202,6 +219,9 @@ function renderDashboard() {
           <input id="credit" type="number" min="1" value="1" title="credit">
           <button type="submit">Enviar</button>
         </form>
+        <form id="clearForm" style="margin-top:10px">
+          <button type="submit">Limpar dados recebidos</button>
+        </form>
       </section>
     </div>
     <section class="panel" style="margin-top:16px">
@@ -232,6 +252,11 @@ function renderDashboard() {
       if (cmdType.value === "remoteCredit") body.credit = Number(credit.value);
       await fetch("/api/devices/" + encodeURIComponent(deviceId.value) + "/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     });
+    clearForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await fetch("/api/state/clear", { method: "POST" });
+      await refresh();
+    });
     refresh();
     setInterval(refresh, 2000);
   </script>
@@ -248,6 +273,13 @@ const server = http.createServer(async (req, res) => {
   }
   if (req.method === "GET" && url.pathname === "/api/state") {
     sendJson(res, 200, state);
+    return;
+  }
+  if (req.method === "POST" && url.pathname === "/api/state/clear") {
+    state.lastMessageAt = null;
+    state.devices = {};
+    state.events = [];
+    sendJson(res, 200, { ok: true });
     return;
   }
   const commandMatch = url.pathname.match(/^\/api\/devices\/([^/]+)\/command$/);

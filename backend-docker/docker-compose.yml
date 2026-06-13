@@ -3,6 +3,8 @@ services:
     image: eclipse-mosquitto:2
     container_name: dc-monitor-mqtt
     restart: unless-stopped
+    environment:
+      TZ: America/Sao_Paulo
     ports:
       - "1883:1883"
     volumes:
@@ -22,6 +24,7 @@ services:
       MQTT_PORT: 1883
       TELEMETRY_TOPIC: dc/telemetry
       PORT: 8080
+      TZ: America/Sao_Paulo
     ports:
       - "8080:8080"
 

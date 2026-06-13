@@ -7,6 +7,11 @@ void REDE_init()
 {
     String buffer;
     REDE_conexao = (eREDE)MEM_readChar(ADR_REDE);
+    if (REDE_conexao != WIFI && REDE_conexao != GSM)
+    {
+        REDE_conexao = WIFI;
+        MEM_writeChar(ADR_REDE, (uint8_t)REDE_conexao);
+    }
     buffer = (REDE_conexao == WIFI) ? "WIFI" : "GSM";
     DBG_tag("Network: ", buffer);
     WIFI_init();
