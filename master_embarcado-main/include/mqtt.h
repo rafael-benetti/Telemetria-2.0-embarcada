@@ -6,6 +6,7 @@
 #define KEY_DATE            "date"
 #define KEY_COUNT           "count"
 #define KEY_TYPE            "type"
+#define KEY_COMMAND         "command"
 #define KEY_RESPONSE        "response"
 #define KEY_FILE_NAME       "fileName"
 #define KEY_PIN             "pin"

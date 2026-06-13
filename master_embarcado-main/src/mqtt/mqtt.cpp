@@ -60,9 +60,13 @@ void MQTT_callback(char *topic, uint8_t *payload, uint32_t lenght)
     if (action == "RestartMachine")
     {
         GPIO_restartPIN(PIN_RESTART_MACHINE);
+        JSON_getJsonResponse(action, true, MQTT_buffer);
+        MQTT_sendJsonToAws(MQTT_buffer);
     }
     else if (action == "update")
     {
+        JSON_getJsonResponse(action, true, MQTT_buffer);
+        MQTT_sendJsonToAws(MQTT_buffer);
         String otaFileName = "/" + jsonDoc[KEY_FILE_NAME].as<String>();
         REDE_ota(otaFileName);
         ESP.restart();

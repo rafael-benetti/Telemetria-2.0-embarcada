@@ -13,6 +13,7 @@ void JSON_getJson(PinInput_t data, char *buffer)
     }
     else
     {
+        jsonDoc[KEY_TYPE] = PULSO;
         jsonDoc[KEY_COUNT] = data.qtd;
         jsonDoc[KEY_PIN] = data.pinNumber;
         jsonDoc[KEY_DATA_OFF] = data.isOff;
@@ -24,12 +25,15 @@ void JSON_getJson(PinInput_t data, char *buffer)
 
 void JSON_getJsonResponse(String action, bool response, char *buffer)
 {
-    StaticJsonDocument<128> jsonDoc;
-    jsonDoc[KEY_TYPE] = action;
+    StaticJsonDocument<192> jsonDoc;
+    jsonDoc[KEY_SERIAL_NUMBER] = BOARD_deviceId;
+    jsonDoc[KEY_TYPE] = COMMAND_ACK;
+    jsonDoc[KEY_COMMAND] = action;
     jsonDoc[KEY_RESPONSE] = response;
+    jsonDoc[KEY_VERSION] = FW_VERSION;
 
     // serializeJson(jsonDoc, Serial);
-    serializeJson(jsonDoc, buffer, 128);
+    serializeJson(jsonDoc, buffer, 192);
 }
 
 void JSON_getJsonUpdate(char *buffer)

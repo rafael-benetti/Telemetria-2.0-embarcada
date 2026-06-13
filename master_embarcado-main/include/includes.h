@@ -9,9 +9,9 @@
 //#define MACHINE_MODEL_RL // Roullete
 
 #ifdef MACHINE_MODEL_RL
-#define FW_VERSION          "RL-1.0.6"
+#define FW_VERSION          "RL-1.0.0"
 #else
-#define FW_VERSION          "1.0.6"
+#define FW_VERSION          "1.0.0"
 #endif
 
 #define BOARD_MODEL         "telemetry"

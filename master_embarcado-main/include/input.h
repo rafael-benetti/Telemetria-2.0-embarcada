@@ -5,7 +5,9 @@
 
 #define GIFT "gift"
 #define CREDIT "credit"
+#define PULSO "pulso"
 #define PING "ping"
+#define COMMAND_ACK "command_ack"
 
 typedef enum
 {

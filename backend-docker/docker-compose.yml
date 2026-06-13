@@ -25,8 +25,11 @@ services:
       TELEMETRY_TOPIC: dc/telemetry
       PORT: 8080
       TZ: America/Sao_Paulo
+      FIRMWARE_FILE: firmware.bin
     ports:
       - "8080:8080"
+    volumes:
+      - ../firmware.bin:/app/firmware.bin:ro
 
 volumes:
   mosquitto-data:

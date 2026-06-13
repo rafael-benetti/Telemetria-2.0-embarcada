@@ -54,7 +54,7 @@ docker exec -it dc-monitor-mqtt mosquitto_sub -t "#" -v
 Para testar o fluxo sem a placa:
 
 ```powershell
-docker exec dc-monitor-mqtt mosquitto_pub -t dc/telemetry -m '{\"serialNumber\":1,\"rssi\":-55,\"network\":\"wifi\",\"version\":\"1.0.6\",\"count\":3,\"pin\":4,\"data_off\":false}'
+docker exec dc-monitor-mqtt mosquitto_pub -t dc/telemetry -m '{\"serialNumber\":1,\"rssi\":-55,\"network\":\"wifi\",\"version\":\"1.0.0\",\"count\":3,\"pin\":4,\"data_off\":false}'
 ```
 
 Depois abra:
