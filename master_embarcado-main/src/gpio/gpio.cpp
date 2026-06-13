@@ -17,13 +17,10 @@ void GPIO_init()
   pinMode(PIN_LED_CONEXAO, OUTPUT);
   pinMode(PIN_LED_PULSO, OUTPUT);
   pinMode(PIN_RST_MODEM, OUTPUT);
-  pinMode(PIN_REMOTE_CREDIT, OUTPUT);
   pinMode(PIN_RESTART_MACHINE, OUTPUT);
-  pinMode(PIN_RESTART_PAY, OUTPUT);
 
   digitalWrite(PIN_RST_MODEM, HIGH);
   digitalWrite(PIN_RESTART_MACHINE, LOW);
-  digitalWrite(PIN_RESTART_PAY, LOW);
 
   interruptFunctions[0] = interruptEntrada01;
   interruptFunctions[1] = interruptEntrada02;
@@ -65,18 +62,4 @@ void GPIO_restartPIN(const uint32_t pin)
   digitalWrite(pin, !digitalRead(pin));
   vTaskDelay(10000 / portTICK_PERIOD_MS);
   digitalWrite(pin, !digitalRead(pin));
-}
-
-void GPIO_remoteCredit(uint8_t pulses)
-{
-  detachInterrupt(PINS_ENTRY[0]);
-  for (uint16_t i = 0; i < pulses; i++)
-  {
-    digitalWrite(PIN_REMOTE_CREDIT, HIGH);
-    digitalWrite(PIN_LED_PULSO, HIGH);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    digitalWrite(PIN_REMOTE_CREDIT, LOW);
-    digitalWrite(PIN_LED_PULSO, LOW);
-    vTaskDelay(pdMS_TO_TICKS(300));
-  }
 }

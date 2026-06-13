@@ -1,12 +1,12 @@
 # Visao geral do firmware
 
-Este projeto e um firmware ESP32/Arduino para uma placa de telemetria embarcada. A placa le sinais fisicos de pulso, envia eventos para um broker MQTT, aceita comandos remotos e possui modos locais de configuracao por Wi-Fi, BLE e serial.
+Este projeto e um firmware ESP32/Arduino para uma placa de telemetria embarcada. A placa le sinais fisicos de entrada, envia eventos para um broker MQTT, aceita comandos remotos e possui modos locais de configuracao por Wi-Fi, BLE e serial.
 
 ## Capacidades da placa
 
 - Ler ate 13 entradas digitais de pulso.
-- Contar creditos/eventos por entrada.
-- Acionar saidas digitais para reiniciar maquina, reiniciar modulo de pagamento e gerar credito remoto.
+- Contar eventos por entrada.
+- Acionar saidas digitais para reiniciar equipamentos ou disparar saidas de controle.
 - Indicar estado por LEDs de conexao e pulso.
 - Usar rede Wi-Fi do ESP32.
 - Usar modem GSM via serial.
@@ -60,9 +60,7 @@ O broker padrao deve ser o IP da maquina na rede local que roda o Docker/backend
 
 Via MQTT, o firmware aceita comandos para:
 
-- `RestartMachine`: acionar o pino de restart da maquina.
-- `RestartPayments`: acionar o pino de restart do modulo de pagamento.
-- `remoteCredit`: gerar pulsos de credito remoto.
+- `RestartMachine`: acionar o pino de restart do equipamento.
 - `update`: baixar firmware OTA e reiniciar a placa.
 
 ## Configuracao local por Wi-Fi
@@ -132,7 +130,7 @@ Isso remove a dependencia do host remoto antigo. Para usar OTA localmente, o bac
 - A interface web retorna senhas e PINs salvos.
 - O JSON recebido por MQTT e webserver nao tem validacao rigorosa.
 - O reenvio offline apaga dados da EEPROM antes de confirmar nova publicacao MQTT.
-- A entrada 0 possui tratamento diferente: nao e anexada no loop normal de interrupcoes e e desativada durante credito remoto.
+- A entrada 0 possui tratamento diferente: nao e anexada no loop normal de interrupcoes.
 - A documentacao operacional ainda deve ser expandida com pinagem, protocolo MQTT e processo de provisionamento.
 
 ## Comandos uteis

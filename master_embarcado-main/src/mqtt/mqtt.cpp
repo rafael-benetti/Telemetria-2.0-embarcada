@@ -61,14 +61,6 @@ void MQTT_callback(char *topic, uint8_t *payload, uint32_t lenght)
     {
         GPIO_restartPIN(PIN_RESTART_MACHINE);
     }
-    else if (action == "RestartPayments")
-    {
-        GPIO_restartPIN(PIN_RESTART_PAY);
-    }
-    else if (action == "remoteCredit")
-    {
-        GPIO_remoteCredit(jsonDoc["credit"]);
-    }
     else if (action == "update")
     {
         String otaFileName = "/" + jsonDoc[KEY_FILE_NAME].as<String>();

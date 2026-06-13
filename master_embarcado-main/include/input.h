@@ -16,10 +16,10 @@ typedef enum
 
 typedef struct
 {
-    volatile uint16_t qtd; // quantity of pulse on GPIO
-    Actions_t action;        // The type of entry: credit (0), gift (1) and ping(2) 
-    uint8_t pinNumber;            // Index of pin in the board
-    bool isOff;                 // Data was save in memory
+    volatile uint16_t qtd; // quantity of pulse or event on GPIO
+    Actions_t action;      // Event type stored in the queue
+    uint8_t pinNumber;     // Index of pin in the board
+    bool isOff;            // Data was saved while offline
 } PinInput_t;
 
 #endif

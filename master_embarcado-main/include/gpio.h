@@ -4,8 +4,6 @@
 #define MAX_PINS_INPUT 13
 
 #define PIN_RESTART_MACHINE 22
-#define PIN_RESTART_PAY 23
-#define PIN_REMOTE_CREDIT 13
 #define PIN_BOOT 0
 #define PIN_CONFIG 03
 #define PIN_LED_CONEXAO 05
@@ -23,7 +21,6 @@ extern QueueHandle_t xMessageQueue;
 
 void GPIO_init();
 void GPIO_restartPIN(const uint32_t pin);
-void GPIO_remoteCredit(uint8_t pulses);
 void GPIO_interruptStart();
 
 typedef void typeFunction();
