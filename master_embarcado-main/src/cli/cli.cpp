@@ -83,7 +83,7 @@ void getInfoCallback(cmd *commandPointer)
 {
     Serial.println("============== Black Telemetry ==============\n");
 
-    Serial.print("Device ID: BLK-");
+    Serial.print("Device ID: TEL-");
     Serial.println(MEM_readUShort(ADR_DEVICE_ID));
     Serial.print("Version: ");
     Serial.println(FW_VERSION);

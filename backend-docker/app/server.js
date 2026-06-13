@@ -783,6 +783,7 @@ function renderDashboard() {
         return "<tr><td><strong>" + id + "</strong></td><td>" + formatPtBrDate(d.lastSeenAt) + "</td><td>" + (d.network || "-") + "</td>" + rssiBadge(d.rssi) + "<td>" + (d.version || "-") + '</td><td class="payload-cell">' + payloadBox(d) + "</td></tr>";
       }).join("") || '<tr><td colspan="6" class="empty-state">Nenhum dispositivo conectado</td></tr>';
       var filtered = data.events.filter(function(e){ return e.type !== "ping"; });
+      filtered.sort(function(a, b) { return (b.at || '').localeCompare(a.at || ''); });
       var total = filtered.length;
       events.innerHTML = filtered
         .map(function(e, index) {

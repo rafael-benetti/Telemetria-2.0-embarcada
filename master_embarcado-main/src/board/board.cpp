@@ -11,7 +11,7 @@ void BOARD_init(){
         MEM_writeUShort(ADR_DEVICE_ID, BOARD_deviceId);
     }
     BOARD_topicSub = MQTT_TOPIC_COMMAND_PREFIX + (String) BOARD_deviceId + MQTT_TOPIC_COMMAND_SUFFIX;
-    BOARD_deviceName = "BLK-" + (String) BOARD_deviceId;
+    BOARD_deviceName = "TEL-" + (String) BOARD_deviceId;
     
     DBG_tag("Board :", BOARD_deviceName);
 
