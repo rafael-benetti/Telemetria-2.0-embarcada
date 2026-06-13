@@ -207,16 +207,13 @@ function renderDashboard() {
         <p>Assinando <code>${TELEMETRY_TOPIC}</code></p>
       </section>
       <section class="panel">
-        <h2>Comando</h2>
+        <h2>Ações</h2>
         <form id="cmdForm">
           <input id="deviceId" placeholder="deviceId" required>
           <select id="cmdType">
             <option>RestartMachine</option>
-            <option>RestartPayments</option>
-            <option>remoteCredit</option>
             <option>update</option>
           </select>
-          <input id="credit" type="number" min="1" value="1" title="credit">
           <button type="submit">Enviar</button>
         </form>
         <form id="clearForm" style="margin-top:10px">
@@ -241,7 +238,10 @@ function renderDashboard() {
       mqttStatus.className = "status " + (data.connected ? "ok" : "");
       mqttStatus.lastElementChild.textContent = data.connected ? "Conectado" : "Desconectado";
       devices.innerHTML = Object.entries(data.devices).map(([id, d]) => "<tr><td>" + id + "</td><td>" + (d.lastSeenAt || "-") + "</td><td>" + (d.network || "-") + "</td><td>" + (d.rssi ?? "-") + "</td><td>" + (d.version || "-") + "</td><td><code>" + escapeHtml(JSON.stringify(d)) + "</code></td></tr>").join("");
-      events.innerHTML = data.events.map(e => "<tr><td>" + e.at + "</td><td>" + (e.serialNumber || "-") + "</td><td>" + (e.type || "-") + "</td><td>" + (e.pin ?? "-") + "</td><td>" + (e.count ?? "-") + "</td><td><code>" + escapeHtml(JSON.stringify(e)) + "</code></td></tr>").join("");
+      events.innerHTML = data.events
+        .filter((e) => e.type !== "ping")
+        .map(e => "<tr><td>" + e.at + "</td><td>" + (e.serialNumber || "-") + "</td><td>" + (e.type || "-") + "</td><td>" + (e.pin ?? "-") + "</td><td>" + (e.count ?? "-") + "</td><td><code>" + escapeHtml(JSON.stringify(e)) + "</code></td></tr>")
+        .join("");
     }
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -249,7 +249,6 @@ function renderDashboard() {
     cmdForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const body = { type: cmdType.value };
-      if (cmdType.value === "remoteCredit") body.credit = Number(credit.value);
       await fetch("/api/devices/" + encodeURIComponent(deviceId.value) + "/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     });
     clearForm.addEventListener("submit", async (event) => {
