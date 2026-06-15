@@ -37,6 +37,7 @@
 #include "file.h"
 #include "wifi_sta.h"
 #include "gpio.h"
+#include "relay_control.h"
 #include "address.h"
 #include "mqtt.h"
 #include <ArduinoJson.h>

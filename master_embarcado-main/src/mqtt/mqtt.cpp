@@ -24,6 +24,12 @@ bool MQTT_sendJsonToAws(char *data)
     return MQTT_client.publish(MQTT_TOPIC_PUBLISH, data);
 }
 
+bool MQTT_sendRelayConfirmation(const char *command, uint32_t durationMs, const char *status)
+{
+    JSON_getRelayConfirmation(command, status, durationMs, MQTT_buffer);
+    return MQTT_sendJsonToAws(MQTT_buffer);
+}
+
 bool MQTT_connect()
 {
     MQTT_client.setServer(MQTT_BROKER_HOST, MQTT_PORT);
@@ -54,9 +60,24 @@ bool MQTT_connect()
 void MQTT_callback(char *topic, uint8_t *payload, uint32_t lenght)
 {
     StaticJsonDocument<128> jsonDoc;
-    deserializeJson(jsonDoc, payload);
-    String action = jsonDoc[KEY_TYPE];
+    DeserializationError error = deserializeJson(jsonDoc, payload, lenght);
+    if (error)
+    {
+        DBG_PRINT("Invalid MQTT payload: ");
+        DBG_PRINTLN(error.c_str());
+        return;
+    }
+
+    String action = jsonDoc[KEY_COMMAND] | jsonDoc[KEY_TYPE] | "";
+    DBG_PRINT("MQTT command received: ");
     DBG_PRINTLN(action);
+
+    if (action.length() == 0)
+    {
+        DBG_PRINTLN("Invalid command");
+        return;
+    }
+
     if (action == "RestartMachine")
     {
         GPIO_restartPIN(PIN_RESTART_MACHINE);
@@ -67,9 +88,66 @@ void MQTT_callback(char *topic, uint8_t *payload, uint32_t lenght)
     {
         JSON_getJsonResponse(action, true, MQTT_buffer);
         MQTT_sendJsonToAws(MQTT_buffer);
-        String otaFileName = "/" + jsonDoc[KEY_FILE_NAME].as<String>();
+        String otaFileName = jsonDoc[KEY_FILE_NAME] | "firmware.bin";
+        otaFileName.trim();
+        if (otaFileName.length() == 0 || otaFileName == "null")
+        {
+            otaFileName = "firmware.bin";
+        }
+        if (!otaFileName.startsWith("/"))
+        {
+            otaFileName = "/" + otaFileName;
+        }
         REDE_ota(otaFileName);
         ESP.restart();
+    }
+    else if (action == COMMAND_ACTION_J8)
+    {
+        uint32_t durationMs = jsonDoc[KEY_DURATION_MS] | 1000;
+        RELAY_requestPulseOnPin(23, false, durationMs, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), durationMs, "executed");
+    }
+    else if (action == COMMAND_ACTION_J11)
+    {
+        uint32_t durationMs = jsonDoc[KEY_DURATION_MS] | 1000;
+        RELAY_requestPulseOnPin(22, false, durationMs, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), durationMs, "executed");
+    }
+    else if (action == COMMAND_ACTION_J8_PULSE)
+    {
+        uint32_t durationMs = jsonDoc[KEY_DURATION_MS] | 1000;
+        RELAY_requestPulseOnPin(23, false, durationMs, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), durationMs, "executed");
+    }
+    else if (action == COMMAND_ACTION_J11_PULSE)
+    {
+        uint32_t durationMs = jsonDoc[KEY_DURATION_MS] | 1000;
+        RELAY_requestPulseOnPin(22, false, durationMs, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), durationMs, "executed");
+    }
+    else if (action == COMMAND_ACTION_J8_ON)
+    {
+        RELAY_requestStateOnPin(23, false, true, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), 0, "executed");
+    }
+    else if (action == COMMAND_ACTION_J8_OFF)
+    {
+        RELAY_requestStateOnPin(23, false, false, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), 0, "executed");
+    }
+    else if (action == COMMAND_ACTION_J11_ON)
+    {
+        RELAY_requestStateOnPin(22, false, true, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), 0, "executed");
+    }
+    else if (action == COMMAND_ACTION_J11_OFF)
+    {
+        RELAY_requestStateOnPin(22, false, false, action.c_str());
+        MQTT_sendRelayConfirmation(action.c_str(), 0, "executed");
+    }
+    else
+    {
+        DBG_PRINTLN("Invalid command");
     }
 }
 
@@ -81,6 +159,7 @@ void MQTT_start()
     while (true)
     {
         MQTT_client.loop();
+        RELAY_taskUpdate();
         vTaskDelay(2000 / portTICK_RATE_MS);
 
         if (xQueueReceive(xMessageQueue, &receiveMsg, (TickType_t)100))

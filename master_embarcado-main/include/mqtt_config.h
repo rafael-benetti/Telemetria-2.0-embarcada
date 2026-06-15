@@ -5,11 +5,11 @@
 #define STR(x) STR_HELPER(x)
 
 #ifndef MQTT_BROKER_HOST
-#define MQTT_BROKER_HOST "192.168.0.20"
+#define MQTT_BROKER_HOST "146.190.79.250"
 #endif
 
 #ifndef MQTT_PORT
-#define MQTT_PORT 1883
+#define MQTT_PORT 1884
 #endif
 
 #ifndef MQTT_TOPIC_PUBLISH

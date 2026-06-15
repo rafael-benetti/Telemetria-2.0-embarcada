@@ -1,21 +1,21 @@
+name: backend-telemetry
+
 services:
   mqtt:
     image: eclipse-mosquitto:2
-    container_name: dc-monitor-mqtt
     restart: unless-stopped
     environment:
       TZ: America/Sao_Paulo
     ports:
-      - "1883:1883"
+      - "1884:1883"
     volumes:
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./broker-mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
 
   app:
     build:
       context: ./app
-    container_name: dc-monitor-app
     restart: unless-stopped
     depends_on:
       - mqtt
@@ -29,8 +29,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ../firmware.bin:/app/firmware.bin:ro
+      - firmware-data:/app/uploads
 
 volumes:
   mosquitto-data:
   mosquitto-log:
+  firmware-data:

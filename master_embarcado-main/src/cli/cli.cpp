@@ -8,6 +8,8 @@ void getInfoCallback(cmd *commandPointer);
 void setCallback(cmd *commandPointer);
 void helpCallback(cmd * command);
 void rebootCallback(cmd * command);
+void relayScanCallback(cmd * command);
+void relayPinCallback(cmd * command);
 
 void errorCallback(cmd_error *e);
 
@@ -19,6 +21,8 @@ Command getInfo;
 Command set;
 Command help;
 Command reboot;
+Command relayScan;
+Command relayPin;
 
 void CLI_task(void *pvt)
 {
@@ -42,6 +46,9 @@ void CLI_task(void *pvt)
     set.addFlagArg("r");
     help = cli.addCmd("help", helpCallback);
     reboot = cli.addCmd("reboot", rebootCallback);
+    relayScan = cli.addCmd("relayscan", relayScanCallback);
+    relayPin = cli.addCmd("relaypin", relayPinCallback);
+    relayPin.addArg("p");
 
     for (;;)
     {
@@ -119,7 +126,20 @@ void setCallback(cmd *command)
     Argument r = c.getArg("r");
     Argument i = c.getArg("i");
 
-    MEM_writeUShort(ADR_DEVICE_ID, i.getValue().toInt());
+    if (!i.isSet() || i.getValue().length() == 0)
+    {
+        Serial.println("ERROR: missing device id. Use: set -i <id> [-r]");
+        return;
+    }
+
+    uint16_t deviceId = static_cast<uint16_t>(i.getValue().toInt());
+    if (deviceId == 0)
+    {
+        Serial.println("ERROR: invalid device id");
+        return;
+    }
+
+    MEM_writeUShort(ADR_DEVICE_ID, deviceId);
     if (r.isSet())
     {
         MEM_writeString(ADR_GSM_APN, "voxter.br");
@@ -166,4 +186,30 @@ void rebootCallback(cmd * command){
     Serial.println("Rebooting...");
     vTaskDelay(3000 / portTICK_PERIOD_MS);
     ESP.restart();
+}
+
+void relayScanCallback(cmd * command)
+{
+    RELAY_scan();
+}
+
+void relayPinCallback(cmd *command)
+{
+    Command c(command);
+    Argument p = c.getArg("p");
+    if (!p.isSet() || p.getValue().length() == 0)
+    {
+        Serial.println("ERROR: missing pin. Use: relaypin -p <gpio>");
+        return;
+    }
+
+    int pin = p.getValue().toInt();
+    if (pin < 0 || pin > 39)
+    {
+        Serial.println("ERROR: invalid gpio");
+        return;
+    }
+
+    RELAY_setPin((uint8_t)pin);
+    Serial.printf("Relay pin updated to %d\n", pin);
 }

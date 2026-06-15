@@ -10,13 +10,15 @@ const MQTT_PORT = Number(process.env.MQTT_PORT || 1883);
 const TELEMETRY_TOPIC = process.env.TELEMETRY_TOPIC || "dc/telemetry";
 const LOCAL_TIME_ZONE = process.env.TZ || "America/Sao_Paulo";
 const FIRMWARE_FILE = process.env.FIRMWARE_FILE || "firmware.bin";
-const FIRMWARE_PATH = path.join(__dirname, FIRMWARE_FILE);
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, "uploads");
+const FIRMWARE_PATH = path.join(UPLOAD_DIR, FIRMWARE_FILE);
 
 const state = {
   connected: false,
   lastMessageAt: null,
   devices: {},
   events: [],
+  firmware: { name: FIRMWARE_FILE, uploadedAt: null, size: 0 },
 };
 
 let mqttSocket = null;
@@ -173,6 +175,10 @@ function readBody(req) {
   });
 }
 
+function ensureUploadDir() {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
 function renderDashboard() {
   return `<!doctype html>
 <html lang="pt-BR">
@@ -327,7 +333,7 @@ function renderDashboard() {
     }
 
     .topic-badge {
-      display: inline-block;
+      display: block;
       margin-top: 12px;
       padding: 5px 12px;
       background: var(--slate-100);
@@ -336,6 +342,9 @@ function renderDashboard() {
       font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
       font-size: 13px;
       color: var(--slate-600);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
     }
 
     .stat-row {
@@ -629,6 +638,12 @@ function renderDashboard() {
     }
 
     .actions-form { margin-top: 12px; }
+    #relayForm {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
     .empty-state {
       text-align: center;
@@ -675,11 +690,11 @@ function renderDashboard() {
           <div class="stat-item"><span class="stat-label">Ultimo contato</span><span class="stat-value" id="statLast" style="font-size:13px;font-weight:500;color:var(--slate-500)">-</span></div>
         </div>
       </section>
-      <section class="panel">
-        <h2>Comandos</h2>
-        <form id="cmdForm">
-          <input id="deviceId" placeholder="ID do dispositivo" required style="flex:1;min-width:140px">
-          <select id="cmdType">
+    <section class="panel">
+      <h2>Comandos</h2>
+      <form id="cmdForm">
+        <input id="deviceId" placeholder="ID do dispositivo" required style="flex:1;min-width:140px">
+        <select id="cmdType">
             <option>RestartMachine</option>
             <option>update</option>
           </select>
@@ -688,6 +703,48 @@ function renderDashboard() {
         </form>
         <form id="clearForm" class="actions-form">
           <button type="submit" class="btn-danger">Limpar dados recebidos</button>
+        </form>
+        <form id="firmwareForm" class="actions-form">
+          <input id="firmwareFile" type="file" accept=".bin,application/octet-stream" style="flex:1;min-width:220px">
+          <button type="submit" class="btn-primary">Enviar firmware para VPS</button>
+        </form>
+        <form id="updateForm" class="actions-form">
+          <button type="submit" class="btn-danger">Atualizar Placa</button>
+        </form>
+        <div class="stat-row" style="margin-top:12px">
+          <div class="stat-item">
+            <span class="stat-label">Firmware na VPS</span>
+            <span class="stat-value" id="firmwareName" style="font-size:14px;font-weight:600">firmware.bin</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Ultimo envio</span>
+            <span class="stat-value" id="firmwareUploadedAt" style="font-size:14px;font-weight:600">-</span>
+          </div>
+        </div>
+        <div id="firmwareStatus" class="topic-badge" style="margin-top:12px">Nenhum firmware enviado ainda.</div>
+      </section>
+      <section class="panel">
+        <h2>Relés</h2>
+        <div class="stat-row" style="margin-top:0">
+          <div class="stat-item">
+            <span class="stat-label">Duração</span>
+            <input id="relayDuration" type="number" min="100" max="5000" step="100" value="1000" style="width:140px">
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Dispositivo</span>
+            <input id="relayDeviceId" placeholder="4" style="width:140px">
+          </div>
+        </div>
+        <form id="relayForm" class="actions-form">
+          <button type="button" class="btn-primary" data-relay="actionj8_pulse">Pulso Azul</button>
+          <button type="button" class="btn-primary" data-relay="actionj11_pulse">Pulso Preto</button>
+          <button type="button" class="btn-primary" data-relay="actionj8_on">Ligar Azul</button>
+          <button type="button" class="btn-primary" data-relay="actionj8_off">Desligar Azul</button>
+          <button type="button" class="btn-primary" data-relay="actionj11_on">Ligar Preto</button>
+          <button type="button" class="btn-primary" data-relay="actionj11_off">Desligar Preto</button>
+        </form>
+        <form id="restartForm" class="actions-form">
+          <button type="submit" class="btn-danger">Reiniciar Placa</button>
         </form>
       </section>
     </div>
@@ -778,6 +835,11 @@ function renderDashboard() {
       document.getElementById("statDevices").textContent = devCount;
       document.getElementById("statEvents").textContent = evtCount;
       document.getElementById("statLast").textContent = formatPtBrDate(data.lastMessageAt);
+      document.getElementById("firmwareName").textContent = data.firmware && data.firmware.name ? data.firmware.name : "firmware.bin";
+      document.getElementById("firmwareUploadedAt").textContent = data.firmware && data.firmware.uploadedAt ? formatPtBrDate(data.firmware.uploadedAt) : "-";
+      document.getElementById("firmwareStatus").textContent = data.firmware && data.firmware.uploadedAt
+        ? ("Firmware salvo na VPS: " + data.firmware.name + " (" + data.firmware.size + " bytes)")
+        : "Nenhum firmware enviado ainda.";
       devices.innerHTML = Object.entries(data.devices).map(function(entry) {
         var id = entry[0], d = entry[1];
         return "<tr><td><strong>" + id + "</strong></td><td>" + formatPtBrDate(d.lastSeenAt) + "</td><td>" + (d.network || "-") + "</td>" + rssiBadge(d.rssi) + "<td>" + (d.version || "-") + '</td><td class="payload-cell">' + payloadBox(d) + "</td></tr>";
@@ -802,9 +864,54 @@ function renderDashboard() {
       event.preventDefault();
       var body = { type: cmdType.value };
       if (cmdType.value === "update") {
-        body.fileName = fileName.value || "firmware.bin";
+        body.fileName = firmwareName.textContent || fileName.value || "firmware.bin";
       }
       await fetch("/api/devices/" + encodeURIComponent(deviceId.value) + "/command", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    });
+    relayForm.querySelectorAll("button[data-relay]").forEach(function(button) {
+      button.addEventListener("click", async function() {
+        var device = relayDeviceId.value || deviceId.value || "1";
+        var body = {
+          command: button.getAttribute("data-relay"),
+          duration_ms: Math.max(100, Math.min(5000, Number(relayDuration.value || 1000)))
+        };
+        await fetch("/api/devices/" + encodeURIComponent(device) + "/command", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body)
+        });
+      });
+    });
+    restartForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      var device = relayDeviceId.value || deviceId.value || "1";
+      await fetch("/api/devices/" + encodeURIComponent(device) + "/command", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "RestartMachine" })
+      });
+    });
+    updateForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      var device = relayDeviceId.value || deviceId.value || "1";
+      var currentFirmware = document.getElementById("firmwareName").textContent || "firmware.bin";
+      if (!currentFirmware || currentFirmware === "null") {
+        currentFirmware = "firmware.bin";
+      }
+      firmwareStatus.textContent = "Disparando update para " + device + " usando " + currentFirmware + "...";
+      try {
+        var response = await fetch("/api/devices/" + encodeURIComponent(device) + "/command", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ type: "update", fileName: currentFirmware })
+        });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        firmwareStatus.textContent = "Comando update enviado. A placa vai puxar o arquivo da VPS e reiniciar.";
+      } catch (error) {
+        firmwareStatus.textContent = "Falha ao enviar update: " + error.message;
+      }
     });
     function syncCommandFields() {
       fileName.style.display = cmdType.value === "update" ? "" : "none";
@@ -815,6 +922,35 @@ function renderDashboard() {
       event.preventDefault();
       await fetch("/api/state/clear", { method: "POST" });
       await refresh();
+    });
+    firmwareForm.addEventListener("submit", async function(event) {
+      event.preventDefault();
+      var file = firmwareFile.files && firmwareFile.files[0];
+      if (!file) {
+        firmwareStatus.textContent = "Selecione um arquivo .bin antes de enviar.";
+        return;
+      }
+      firmwareStatus.textContent = "Enviando " + file.name + " para a VPS...";
+      try {
+        var uploadBody = await file.arrayBuffer();
+        var response = await fetch("/api/firmware", {
+          method: "POST",
+          headers: {
+            "content-type": "application/octet-stream",
+            "x-firmware-name": file.name
+          },
+          body: uploadBody
+        });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+        var result = await response.json();
+        firmwareFile.value = "";
+        firmwareStatus.textContent = "Upload concluido: " + result.name + " (" + result.size + " bytes). Depois envie o comando update para a placa.";
+        await refresh();
+      } catch (error) {
+        firmwareStatus.textContent = "Falha no upload: " + error.message;
+      }
     });
     refresh();
     setInterval(refresh, 2000);
@@ -851,6 +987,28 @@ const server = http.createServer(async (req, res) => {
     sendJson(res, 200, state);
     return;
   }
+  if (req.method === "POST" && url.pathname === "/api/firmware") {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      const uploadedName = String(req.headers["x-firmware-name"] || FIRMWARE_FILE).split(/[\\/]/).pop();
+      try {
+        ensureUploadDir();
+        fs.writeFileSync(FIRMWARE_PATH, buffer);
+        state.firmware = {
+          name: uploadedName || FIRMWARE_FILE,
+          uploadedAt: nowLocalIso(),
+          size: buffer.length,
+        };
+        sendJson(res, 200, { ok: true, name: state.firmware.name, size: buffer.length, path: FIRMWARE_PATH });
+      } catch (error) {
+        sendJson(res, 500, { error: `upload failed: ${error.message}` });
+      }
+    });
+    req.on("error", () => sendJson(res, 500, { error: "upload failed" }));
+    return;
+  }
   if (req.method === "POST" && url.pathname === "/api/state/clear") {
     state.lastMessageAt = null;
     state.devices = {};
@@ -871,12 +1029,16 @@ const server = http.createServer(async (req, res) => {
     if (command.type === "update" && !command.fileName) {
       command.fileName = FIRMWARE_FILE;
     }
+    if (command.type === "update") {
+      command.fileName = FIRMWARE_FILE;
+    }
     const payload = JSON.stringify(command);
     const topic = `dc/${deviceId}/cmd`;
     if (!mqttSocket || !state.connected) {
       sendJson(res, 503, { error: "mqtt disconnected" });
       return;
     }
+    console.log(`[cmd] ${topic} ${payload}`);
     mqttSocket.write(publishPacket(topic, payload));
     sendJson(res, 202, { topic, payload: command });
     return;

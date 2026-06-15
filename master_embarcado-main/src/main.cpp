@@ -35,6 +35,7 @@ void setup()
 #endif
   esp_task_wdt_init(120, true);
   GPIO_init();
+  RELAY_init();
   FAST_init();
   MEM_init();
   DATAOFF_init();

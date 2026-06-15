@@ -108,17 +108,20 @@ bool WIFI_ota(String binName)
 
             // extract headers here
             // Start with content length
-            if (line.startsWith("Content-Length: "))
+            String lowerLine = line;
+            lowerLine.toLowerCase();
+            if (lowerLine.startsWith("content-length: "))
             {
-                contentLength = atol(line.substring(strlen("Content-Length: ")).c_str());
+                contentLength = atol(line.substring(line.indexOf(':') + 1).c_str());
 
                 DBG_PRINTLN("Got " + String(contentLength) + " bytes from server");
             }
 
             // Next, the content type
-            if (line.startsWith("Content-Type: "))
+            if (lowerLine.startsWith("content-type: "))
             {
-                String contentType = line.substring(strlen("Content-Type: "));
+                String contentType = line.substring(line.indexOf(':') + 1);
+                contentType.trim();
                 DBG_PRINTLN("Got " + contentType + " payload.");
                 if (contentType == "application/octet-stream")
                 {

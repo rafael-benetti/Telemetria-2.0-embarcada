@@ -47,6 +47,20 @@ void JSON_getJsonUpdate(char *buffer)
     serializeJson(jsonDoc, buffer, 128);
 }
 
+void JSON_getRelayConfirmation(const char *command, const char *status, uint32_t durationMs, char *buffer)
+{
+    StaticJsonDocument<256> jsonDoc;
+    jsonDoc[KEY_TYPE] = "relay";
+    jsonDoc[KEY_COMMAND] = command;
+    jsonDoc["status"] = status;
+    jsonDoc[KEY_DURATION_MS] = durationMs;
+    jsonDoc[KEY_SERIAL_NUMBER] = BOARD_deviceId;
+    jsonDoc[KEY_RSSI] = REDE_getSignal();
+    jsonDoc[KEY_NETWORK] = (REDE_conexao == WIFI) ? "wifi" : "gsm";
+    jsonDoc[KEY_VERSION] = FW_VERSION;
+    serializeJson(jsonDoc, buffer, 256);
+}
+
 // message = {
 //     'telemetryBoardId': 1,
 //     'fwVersion': '1.0.4',
