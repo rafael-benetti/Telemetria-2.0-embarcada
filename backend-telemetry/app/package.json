@@ -1,0 +1,8 @@
+{
+  "name": "dc-monitor",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "mongodb": "^6.12.0"
+  }
+}
